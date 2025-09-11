@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vader — Thumbnails that get clicked</title>
+<meta name="description" content="Vader makes thumbnails that get clicked. 400M+ views across YouTube." />
+<style>
+  :root{
+    /* Lighter, more-blue palette */
+    --bg-1:#e9f4ff;     /* very light sky */
+    --bg-2:#b9ddff;     /* soft blue */
+    --bg-3:#0b1724;     /* deep navy */
+    --ink:#f5fbff;
+    --muted:#bcd0e6;
+    --accent:#7cc6ff;   /* primary blue accent */
+    --accent-strong:#59b6ff;
+    --trans:cubic-bezier(.2,.8,.2,1);
+    --shadow:0 18px 40px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box}
+ html,body{
+  margin:0; padding:0;
+  font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+  background:
+    linear-gradient(#05090f 0%, #0b1724 35%, transparent 40%) fixed,
+    #0b1724;
+  color:var(--ink);
+}
+
+
+  /* Scroll progress bar */
+  .progress{
+    position:fixed; top:0; left:0; height:3px; width:0%;
+    background:linear-gradient(90deg,var(--accent),var(--accent-strong));
+    z-index:90;
+  }
+
+  /* Sticky nav with show/hide */
+  .nav{
+    position:sticky; top:0; z-index:80;
+    backdrop-filter:saturate(130%) blur(10px);
+    background:linear-gradient(to bottom, rgba(9,20,30,.55), rgba(9,20,30,.25));
+    border-bottom:1px solid rgba(255,255,255,.06);
+    transform:translateY(0); transition:transform 260ms ease;
+  }
+  .nav.hide{transform:translateY(-100%)}
+  .nav .wrap{
+    max-width:1100px; margin:0 auto; padding:14px 20px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .brand{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.4px}
+  .brand .logo{
+    width:34px; height:34px; border-radius:50%;
+    display:grid; place-items:center; background:linear-gradient(145deg,#163247,#0d2231);
+    outline:1px solid rgba(255,255,255,.06); box-shadow:var(--shadow);
+  }
+  .brand .logo svg{width:20px; height:20px; fill:var(--accent)}
+  .menu{display:flex; gap:18px; align-items:center}
+  .menu a{padding:8px 10px; border-radius:999px; color:#eaf5ff; font-weight:700; letter-spacing:.2px; opacity:.9}
+  .menu a:hover{background:rgba(255,255,255,.06)}
+  .cta{
+    background:linear-gradient(180deg,var(--accent),var(--accent-strong));
+    color:#062135; padding:9px 16px; border-radius:999px; font-weight:900; box-shadow:0 8px 24px rgba(89,182,255,.35);
+    border:1px solid rgba(255,255,255,.2); position:relative; overflow:hidden; transition:transform .18s var(--trans)
+  }
+  .cta.ghost{
+    background:transparent; color:#eaf5ff; border-color:rgba(255,255,255,.18); box-shadow:none
+  }
+  /* Button ripple */
+  .cta::after{
+    content:""; position:absolute; inset:auto auto 0 50%; translate:-50% 50%;
+    width:0; height:0; border-radius:50%;
+    background:rgba(255,255,255,.35);
+    transition:width .4s ease, height .4s ease, opacity .4s ease;
+    opacity:0;
+  }
+  .cta:active::after{
+    width:180%; height:180%; opacity:.1; transition:0s;
+  }
+
+  /* Hero */
+  .hero{min-height:88vh; display:grid; place-items:center; position:relative; overflow:hidden}
+  .hero .inner{max-width:1100px; width:100%; padding:110px 20px 60px; text-align:center}
+  .title{font-weight:900; font-size:clamp(42px,7vw,96px); letter-spacing:.2px; margin:0 0 10px;text-shadow:0 10px 30px rgba(0,0,0,.35);background:linear-gradient(180deg,#f8fbff,#cfe9ff 60%, #9cd1ff);-webkit-background-clip:text; background-clip:text; color:transparent;}
+  .tag{font-size:clamp(18px,2.4vw,34px); color:#eaf5ff; margin:0 0 10px}
+  .sub{color:var(--muted); font-size:15px; margin-top:6px; text-shadow:0 2px 10px rgba(0,0,0,.35)}
+  .stats{
+    margin-top:18px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap
+  }
+  .pill{
+    padding:8px 12px; border-radius:999px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12);
+    color:#dfeeff; font-weight:700; letter-spacing:.2px;
+  }
+  .scroll{position:absolute; bottom:26px; left:50%; translate:-50% 0; opacity:.8; font-size:13px; color:var(--muted)}
+
+    }
+
+  /* Section wrapper */
+  section{position:relative; z-index:2}
+  section .wrap{max-width:1100px; margin:0 auto; padding:60px 20px}
+
+  /* Work */
+  .h2{font-size:clamp(26px,4vw,38px); font-weight:900; letter-spacing:.2px; margin:0 0 10px; text-shadow:0 6px 22px rgba(0,0,0,.35);}
+  .lead{color:#dfeeff; margin:0 0 24px}
+  .grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:26px;
+  }
+  @media (max-width:900px){ .grid{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:560px){ .grid{grid-template-columns:1fr} }
+
+  .card{
+    position:relative; overflow:hidden; border-radius:18px;
+    background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+    border:1px solid rgba(255,255,255,.10);
+    transition:transform .3s var(--trans), box-shadow .3s var(--trans), border-color .3s var(--trans);
+    will-change:transform, box-shadow;
+    perspective:900px;
+  }
+  .card:hover{ box-shadow:var(--shadow); border-color:rgba(255,255,255,.14) }
+  .thumb{
+    display:block; aspect-ratio:16/9; width:100%; height:auto; object-fit:cover;
+    transition:transform .45s var(--trans), filter .35s var(--trans); filter:saturate(1.05) contrast(1.02);
+  }
+  .card:hover .thumb{transform:scale(1.06); filter:saturate(1.15) contrast(1.08)}
+  .cap{ display:none }
+
+  /* Lightbox */
+  .lightbox{
+    position:fixed; inset:0; z-index:100; display:none; place-items:center;
+    background:rgba(2,8,14,.86); backdrop-filter:blur(6px);
+  }
+  .lightbox.show{display:grid}
+  .lightbox img{max-width:92vw; max-height:82vh; border-radius:12px; border:1px solid rgba(255,255,255,.12)}
+  .lightbox .close{
+    position:absolute; top:18px; right:18px; background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.14); padding:8px 10px; border-radius:10px; cursor:pointer; color:#eaf5ff; font-weight:800;
+  }
+
+  /* Contact */
+  .contact-card{
+    display:grid; grid-template-columns:1fr 1fr; gap:22px;
+  }
+  @media (max-width:720px){ .contact-card{grid-template-columns:1fr} }
+  .contact{
+    padding:18px; border-radius:14px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08)
+  }
+  .chip{
+    margin-top:10px; display:flex; justify-content:space-between; align-items:center;
+    padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08)
+  }
+  .copy{cursor:pointer; font-weight:800; color:var(--accent)}
+  .copy:hover{text-decoration:underline}
+
+  /* Reveal on scroll */
+  .reveal{ opacity:0; transform: translateY(18px) scale(.98); }
+  .reveal.show{ animation: fadePop .7s cubic-bezier(.2,.8,.2,1) forwards; }
+  @keyframes fadePop{0%{opacity:0; transform:translateY(18px) scale(.98)}60%{opacity:1; transform:translateY(0) scale(1.02)}100%{opacity:1; transform:translateY(0) scale(1)}}
+
+  /* Extra hover life on thumbs */
+  .card:hover{
+    box-shadow: 0 24px 60px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.14) inset;
+  }
+  .card::after{
+    content:""; position:absolute; inset:auto 0 0 0; height:40%;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,.28));
+    pointer-events:none; transition:opacity .4s var(--trans); opacity:.6;
+  }
+  .card:hover::after{ opacity:.85; }
+
+  /* CTA hover micro interaction */
+  .cta{ transform: translateZ(0) scale(1); }
+  .cta:hover{ transform: translateY(-1px) scale(1.02); }
+
+  /* Views pill glow */
+  #viewsPill{
+    position:relative; overflow:hidden;
+    box-shadow: 0 0 0 0 rgba(124,198,255,.0);
+    animation: pillGlow 2.4s ease-in-out infinite;
+  }
+  @keyframes pillGlow{
+    0%{ box-shadow: 0 0 0 0 rgba(124,198,255,.0) }
+    50%{ box-shadow: 0 0 22px 6px rgba(124,198,255,.28) }
+    100%{ box-shadow: 0 0 0 0 rgba(124,198,255,.0) }
+  }
+
+  /* Wave divider (decorative) */
+  .wave{ position:absolute; left:0; right:0; bottom:-1px; height:70px; z-index:1; opacity:.6 }
+  .wave svg{ width:100%; height:100% }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion:reduce){
+    .thumb, .reveal, .card{transition:none}
+    .card:hover .thumb{transform:none}
+  }
+/* ===== MOBILE FIXES ===== */
+@media (max-width: 900px){
+  /* Background: no fixed scroll on phones */
+  html, body{
+    background-attachment: scroll !important;
+    background:
+      linear-gradient(var(--bg-1), var(--bg-2) 50%, transparent 51%),
+      var(--bg-3) !important;
+  }
+
+  /* Hero sizing/spacing */
+  .hero{ min-height: 92vh; }
+  .hero .inner{ padding: 140px 16px 64px; }
+
+  /* Title & text scaling */
+  .title{
+    font-size: clamp(40px, 12vw, 84px) !important;
+    text-shadow:
+      0 12px 30px rgba(0,0,0,.55),
+      0 1px 0 rgba(255,255,255,.32) !important;
+  }
+  .tag{ font-size: clamp(18px, 5vw, 28px); }
+  .sub{ font-size: 14px; }
+
+  /* Buttons stack for tap targets */
+  .stats{ flex-direction: column; gap: 6px; }
+  .buttons{ flex-direction: column; gap: 10px; align-items: center; }
+  .cta{ width: 92%; max-width: 420px; padding: 14px 18px; border-radius: 14px; }
+
+  /* Work grid: 1 column */
+  .grid{ grid-template-columns: 1fr; gap: 16px; }
+  .card{ border-radius: 14px; }
+  .card:hover .thumb{ transform: none; }
+
+  /* Contact: single column */
+  .contact-card{ grid-template-columns: 1fr; gap: 16px; }
+  .contact{ padding: 14px; }
+  .chip{ padding: 14px 16px; }
+}
+
+/* Extra-small phones (≤380px) */
+@media (max-width: 380px){
+  .hero .inner{ padding: 120px 14px 56px; }
+  .title{ font-size: clamp(32px, 12vw, 72px) !important; }
+  .tag{ font-size: clamp(16px, 5.5vw, 22px); }
+}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" role="img" aria-label="Vader logo">
+          <path d="M3 5l6.2 14h5.6L21 5h-4.3l-3.1 8.3L10.6 5H3z"/>
+        </svg>
+      </span>
+      <span>Vader</span>
+    </div>
+    <nav class="menu">
+      <a href="#home">Home</a>
+      <a href="#work">Work</a>
+      <a href="#contact" class="cta">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<section id="home" class="hero" aria-label="Hero">
+  <div class="spotlight" id="spotlight" aria-hidden="true"></div>
+  <div class="inner">
+    <p class="tag reveal">High-CTR YouTube Thumbnails</p>
+    <h1 class="title reveal">Vader</h1>
+    <p class="tag reveal">Thumbnails that <strong style="color:var(--accent)">get clicked</strong>.</p>
+    <p class="sub">Simple. Fast. Results.</p>
+    <div class="stats">
+      <span class="pill" id="viewsPill"><strong id="viewCount" data-target="400000000">0</strong>+ views</span>
+    </div>
+    <div style="margin-top:22px; display:flex; gap:12px; justify-content:center">
+      <a href="#work" class="cta">See Work</a>
+      <a href="#contact" class="cta ghost">Get in Touch</a>
+    </div>
+  </div>
+  <div class="scroll">↓ scroll</div>
+
+  <!-- Decorative wave divider -->
+  <div class="wave" aria-hidden="true">
+    <svg viewBox="0 0 1440 80" preserveAspectRatio="none">
+      <path d="M0,32 C240,80 480,0 720,32 C960,64 1200,40 1440,8 L1440,80 L0,80 Z"
+            fill="url(#grad)"/>
+      <defs>
+        <linearGradient id="grad" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="#b9ddff" stop-opacity=".6"/>
+          <stop offset="1" stop-color="#0b1724" stop-opacity=".9"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+</section>
+
+<!-- WORK -->
+<section id="work" aria-label="Work">
+  <div class="wrap">
+    <h2 class="h2 reveal">Recent <span class="accent">Work</span></h2>
+    <p class="lead reveal">Hover to preview. Click to open.</p>
+
+    <div class="grid">
+      <!-- Replace src/data-full with your images -->
+      <figure class="card reveal">
+        <img class="thumb" src="assets/work/work-01.jpg" alt="Thumbnail 1" data-full="assets/work/work-01.jpg" loading="lazy">
+      </figure>
+      <figure class="card reveal">
+        <img class="thumb" src="assets/work/work-02.jpg" alt="Thumbnail 2" data-full="assets/work/work-02.jpg" loading="lazy">
+      </figure>
+      <figure class="card reveal">
+        <img class="thumb" src="assets/work/work-03.jpg" alt="Thumbnail 3" data-full="assets/work/work-03.jpg" loading="lazy">
+      </figure>
+      <figure class="card reveal">
+        <img class="thumb" src="assets/work/work-04.jpg" alt="Thumbnail 4" data-full="assets/work/work-04.jpg" loading="lazy">
+      </figure>
+      <figure class="card reveal">
+        <img class="thumb" src="assets/work/work-05.jpg" alt="Thumbnail 5" data-full="assets/work/work-05.jpg" loading="lazy">
+      </figure>
+      <figure class="card reveal">
+        <img class="thumb" src="assets/work/work-06.jpg" alt="Thumbnail 6" data-full="assets/work/work-06.jpg" loading="lazy">
+      </figure>
+    </div>
+
+    <div style="margin-top:24px; display:flex; justify-content:center">
+      <a href="#contact" class="cta">More Work → Contact</a>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact" aria-label="Contact">
+  <div class="wrap">
+    <h2 class="h2 reveal">Contact <span class="accent">Me</span></h2>
+    <div class="contact-card">
+      <div class="contact reveal">
+        <p class="lead">Fastest reply via X (Twitter) or Discord.</p>
+        <div class="chip" data-copy="@vadersz">
+          <span>𝕏 &nbsp; <strong>@vadersz</strong></span>
+          <span class="copy">Copy</span>
+        </div>
+        <div class="chip" data-copy="vaderzs">
+          <span>Discord &nbsp; <strong>vaderzs</strong></span>
+          <span class="copy">Copy</span>
+        </div>
+      </div>
+      <div class="contact reveal">
+        <p class="lead">Prefer email?</p>
+        <div class="chip" data-copy="hello@vader.studio">
+          <span>✉️ &nbsp; <strong>hello@vader.studio</strong></span>
+          <span class="copy">Copy</span>
+        </div>
+        <p style="color:#b9ddff; margin-top:10px">Include your channel.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" aria-hidden="true">
+  <button class="close" id="lbClose" aria-label="Close">Close</button>
+  <img alt="Full view">
+</div>
+
+<script>
+  // Progress bar on scroll
+  const progress = document.getElementById('progress');
+  window.addEventListener('scroll', ()=>{
+    const h = document.documentElement;
+    const sc = h.scrollTop || document.body.scrollTop;
+    const max = h.scrollHeight - h.clientHeight;
+    progress.style.width = (sc / max) * 100 + '%';
+  });
+
+  // Hide nav on scroll down
+  let lastY = window.scrollY;
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', ()=>{
+    const y = window.scrollY;
+    nav.classList.toggle('hide', y > lastY && y > 60);
+    lastY = y;
+  });
+
+  // Scroll reveal with stagger
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach((entry)=>{
+      if(entry.isIntersecting){
+        const el = entry.target;
+        const siblings = [...(el.parentElement?.children || [])];
+        const i = Math.max(0, siblings.indexOf(el));
+        el.style.animationDelay = (i * 70) + 'ms';
+        el.classList.add('show');
+        io.unobserve(el);
+      }
+    });
+  }, {threshold:.16});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+  // Lightbox with keyboard nav
+  const lb = document.getElementById('lightbox');
+  const lbImg = lb.querySelector('img');
+  const thumbs = [...document.querySelectorAll('.grid .thumb')];
+  let index = -1;
+
+  function openLB(i){
+    index = i;
+    lbImg.src = thumbs[index].dataset.full || thumbs[index].src;
+    lb.classList.add('show');
+  }
+  function closeLB(){ lb.classList.remove('show'); }
+
+  thumbs.forEach((t,i)=>{
+    t.addEventListener('click', ()=>openLB(i));
+    t.closest('.card').addEventListener('mouseenter', ()=> t.style.transform='scale(1.06)');
+    t.closest('.card').addEventListener('mouseleave', ()=> t.style.transform='');
+  });
+
+  document.getElementById('lbClose').addEventListener('click', closeLB);
+  lb.addEventListener('click', (e)=>{ if(e.target === lb) closeLB(); });
+  window.addEventListener('keydown', (e)=>{
+    if(!lb.classList.contains('show')) return;
+    if(e.key === 'Escape') closeLB();
+    if(e.key === 'ArrowRight'){ index=(index+1)%thumbs.length; lbImg.src=thumbs[index].dataset.full||thumbs[index].src; }
+    if(e.key === 'ArrowLeft'){ index=(index-1+thumbs.length)%thumbs.length; lbImg.src=thumbs[index].dataset.full||thumbs[index].src; }
+  });
+
+  // Spotlight follows mouse
+  const spot = document.getElementById('spotlight');
+  window.addEventListener('mousemove', (e)=>{
+    spot.style.background = `radial-gradient(360px 240px at ${e.clientX}px ${e.clientY}px, rgba(124,198,255,.18), transparent 60%)`;
+  });
+
+  // Card tilt effect
+  const maxTilt = 8; // degrees
+  document.querySelectorAll('.card').forEach(card=>{
+    card.addEventListener('mousemove', (e)=>{
+      const r = card.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width;   // 0..1
+      const py = (e.clientY - r.top) / r.height;   // 0..1
+      const rx = (py - .5) * -maxTilt;
+      const ry = (px - .5) * maxTilt;
+      card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+    });
+    card.addEventListener('mouseleave', ()=> card.style.transform = 'perspective(900px) rotateX(0) rotateY(0)');
+  });
+
+  // Animated counter for 400M+ views
+  (function(){
+    const el = document.getElementById('viewCount');
+    if(!el) return;
+    const target = +el.dataset.target || 400000000;
+    let started = false;
+
+    const start = ()=>{
+      if(started) return; started = true;
+      const dur = 1800;
+      const t0 = performance.now();
+      const step = (t)=>{
+        const p = Math.min(1, (t - t0) / dur);
+        const eased = 1 - Math.pow(1 - p, 3);
+        const val = Math.floor(target * eased);
+        const M = (val/1e6).toFixed(0);
+        el.textContent = M + 'M';
+        if(p < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    };
+
+    const hero = document.getElementById('home');
+    const onceIO = new IntersectionObserver((ents)=>{
+      if(ents.some(e=>e.isIntersecting)){ start(); onceIO.disconnect(); }
+    }, {threshold:.4});
+    onceIO.observe(hero);
+  })();
+</script>
+</body>
+</html>
